@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krist - Mahsulot haqida</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo"><a href="index.html" style="text-decoration:none; color:var(--text-color);">Krist</a></div>
+            <a href="index.html" style="text-decoration:none; color:var(--dark-gray); font-size:14px;"><i class="fas fa-arrow-left"></i> Orqaga qaytish</a>
+        </div>
+    </header>
+
+    <div class="product-detail-container" style="max-width: 1200px; margin: 50px auto; padding: 0 20px; display: flex; gap: 50px; flex-wrap: wrap;">
+        <div class="detail-image" style="flex: 1; min-width: 300px;">
+            <img id="mainImg" src="" alt="" style="width: 100%; border-radius: 10px; background: var(--gray);">
+        </div>
+        <div class="detail-info" style="flex: 1; min-width: 300px;">
+            <h1 id="pName" style="font-size: 32px; margin-bottom: 10px;"></h1>
+            <p id="pPrice" style="font-size: 24px; color: var(--primary-color); font-weight: 700; margin-bottom: 20px;"></p>
+            <p id="pDescription" style="color: var(--dark-gray); line-height: 1.6; margin-bottom: 30px;"></p>
+            
+            <div style="margin-bottom: 30px;">
+                <h4>Tanlov:</h4>
+                <p style="font-size: 14px; color: var(--dark-gray); margin-top: 5px;">Standart o'lcham (Original)</p>
+            </div>
+
+            <button class="btn-primary-krist" id="addToCartBtn" style="padding: 15px 50px; width: auto;">Savatchaga qo'shish</button>
+            
+            <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
+                <p style="font-size: 14px; color: green;"><i class="fas fa-check-circle"></i> Stokda mavjud</p>
+                <p style="font-size: 14px; color: #666; margin-top: 5px;"><i class="fas fa-truck"></i> Yetkazib berish: 24-48 soat ichida</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = parseInt(urlParams.get('id'));
+
+        // Dinamik mahsulotlarni o'qish
+        const products = JSON.parse(localStorage.getItem('krist_products')) || [];
+        const product = products.find(p => p.id === productId);
+
+        if (product) {
+            document.getElementById('mainImg').src = product.image;
+            document.getElementById('pName').innerText = product.name;
+            document.getElementById('pPrice').innerText = `$${product.price.toFixed(2)}`;
+            document.getElementById('pDescription').innerText = product.description || "Ushbu mahsulot haqida ma'lumot kiritilmagan.";
+            
+            document.getElementById('addToCartBtn').onclick = () => {
+                let cart = JSON.parse(localStorage.getItem('krist_cart')) || [];
+                cart.push(product);
+                localStorage.setItem('krist_cart', JSON.stringify(cart));
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Savatchaga qo\'shildi!',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            };
+        } else {
+            window.location.href = 'index.html';
+        }
+
+        // Mavzuni qo'llash
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    </script>
+</body>
+</html>

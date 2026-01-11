@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krist - Shaxsiy Kabinet</title>
+    <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <header class="main-header"><div class="header-container"><div class="logo"><a href="index.html" style="text-decoration:none; color:var(--text-color);">Krist</a></div><a href="index.html" style="color:var(--dark-gray);"><i class="fas fa-home"></i></a></div></header>
+    <div class="profile-header"><img id="userAvatar" src="" class="user-avatar-big"><h2 id="userName"></h2><p id="userEmail"></p></div>
+    <div class="profile-grid">
+        <div class="info-card"><h3>Profil</h3><hr style="margin:20px 0; border:0; border-top:1px solid #eee;"><p><strong>Status:</strong> VIP</p><button onclick="logout()" class="btn-primary-krist" style="margin-top:30px; background:#ff4757;">Chiqish</button></div>
+        <div class="orders-card"><h3>Buyurtmalarim</h3><div id="userOrdersList" style="margin-top:20px;">Yuklanmoqda...</div></div>
+    </div>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('krist_user'));
+        if (!user) window.location.href = 'register.html';
+
+        document.getElementById('userAvatar').src = user.avatar;
+        document.getElementById('userName').innerText = user.name;
+        document.getElementById('userEmail').innerText = user.email;
+
+        async function loadMyOrders() {
+            const list = document.getElementById('userOrdersList');
+            try {
+                // Serverdan faqat shu foydalanuvchining buyurtmalarini olamiz
+                const res = await fetch(`http://localhost:3000/api/orders?email=${user.email}`);
+                const orders = await res.json();
+                
+                if (orders.length === 0) {
+                    list.innerHTML = '<p>Buyurtmalar yo\'q.</p>';
+                    return;
+                }
+
+                list.innerHTML = orders.map(o => `
+                    <div class="order-row" style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #eee;">
+                        <div><strong>#${o.id}</strong><p style="font-size:12px; color:#999;">${new Date(o.date).toLocaleDateString()}</p></div>
+                        <div style="text-align:right;">
+                            <p style="font-weight:700;">$${o.total.toFixed(2)}</p>
+                            <span style="font-size:10px; padding:3px 8px; border-radius:50px; background:${getStatusColor(o.status)}; color:white;">${o.status}</span>
+                        </div>
+                    </div>`).join('');
+            } catch (e) { list.innerHTML = "Xatolik!"; }
+        }
+
+        function getStatusColor(s) {
+            return s === 'delivered' ? '#27ae60' : (s === 'processing' ? '#2980b9' : '#f39c12');
+        }
+
+        function logout() { localStorage.removeItem('krist_user'); window.location.href = 'register.html'; }
+        
+        loadMyOrders();
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krist - Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="modal.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .admin-container { padding: 40px 5%; max-width: 1200px; margin: 0 auto; }
+        .order-card, .admin-product-card { background: white; border: 1px solid #eee; padding: 20px; border-radius: 15px; margin-bottom: 20px; position: relative; }
+        .tab-menu { display: flex; gap: 20px; margin: 30px 0; border-bottom: 1px solid #eee; }
+        .tab-btn { cursor: pointer; padding: 10px 20px; font-weight: 600; color: #666; }
+        .tab-btn.active { color: #131118; border-bottom: 3px solid #131118; }
+        .admin-product-card { text-align: center; }
+        .admin-product-card img { width: 100%; height: 100px; object-fit: contain; margin-bottom: 10px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; font-size: 12px; margin-bottom: 5px; font-weight: 600; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; outline: none; }
+        [data-theme="dark"] .order-card, [data-theme="dark"] .admin-product-card { background: #1a1921; border-color: #333; }
+        .stat-card { background: white; padding: 20px; border-radius: 15px; text-align: center; border: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <div id="adminLogin" style="height: 100vh; display: flex; justify-content: center; align-items: center; background: #f3f4f6; position: fixed; width: 100%; top: 0; left: 0; z-index: 9999;">
+        <div style="background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; width: 350px;">
+            <h1 class="logo">Krist Admin</h1>
+            <p style="margin: 20px 0; color: #666;">Kirish kodi: 2026</p>
+            <input type="password" id="adminCode" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; text-align:center; margin-bottom:20px;">
+            <button onclick="checkAdminCode()" class="btn-primary-krist">Kirish</button>
+            <p id="errorMsg" style="color: red; margin-top: 15px; display: none;">Xato kod!</p>
+        </div>
+    </div>
+
+    <div class="admin-container" id="adminContent" style="display: none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+            <h1 class="logo">Krist Admin</h1>
+            <button onclick="logoutAdmin()" style="background:#eee; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Chiqish</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom: 30px;">
+            <div class="stat-card"><span>Buyurtmalar</span><h2 id="statOrders">0</h2></div>
+            <div class="stat-card"><span>Tushum</span><h2 id="statSales" style="color:#27ae60;">0 so'm</h2></div>
+            <div class="stat-card"><span>Mahsulotlar</span><h2 id="statProducts">0</h2></div>
+        </div>
+
+        <div class="tab-menu">
+            <div class="tab-btn active" id="tabOrders" onclick="showTab('orders')">Buyurtmalar</div>
+            <div class="tab-btn" id="tabProducts" onclick="showTab('products')">Mahsulotlar</div>
+        </div>
+
+        <div id="ordersTab"><div id="adminOrdersList"></div></div>
+
+        <div id="productsTab" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2>Mahsulotlar boshqaruvi</h2>
+                <button onclick="openProductModal()" class="btn-primary-krist" style="width:auto; padding:8px 20px;">+ Yangi mahsulot</button>
+            </div>
+            <div id="adminProductsList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:20px;"></div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeProductModal()">&times;</span>
+            <h2 id="modalTitle">Mahsulot</h2>
+            <div class="form-group">
+                <label>Mahsulot rasmi</label>
+                <input type="file" id="pImgInput" accept="image/*">
+                <img id="pImgPreview" style="width:80px; height:80px; object-fit:cover; display:none; margin-top:10px; border-radius:10px;">
+            </div>
+            <div class="form-group"><label>Nomi</label><input type="text" id="pName"></div>
+            <div class="form-group"><label>Narxi (so'm)</label><input type="number" id="pPrice"></div>
+            <div class="form-group">
+                <label>Kategoriya</label>
+                <select id="pCategory">
+                    <option value="Makiyaj">Makiyaj</option>
+                    <option value="Yuz parvarishi">Yuz parvarishi</option>
+                    <option value="Atirlar">Atirlar</option>
+                    <option value="Soch parvarishi">Soch parvarishi</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Tarif</label><textarea id="pDescription"></textarea></div>
+            <button onclick="saveProduct()" class="btn-primary-krist">Saqlash</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:3000/api";
+        let currentEditId = null;
+        let uploadedImgBase64 = "";
+
+        document.getElementById('pImgInput').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                uploadedImgBase64 = reader.result;
+                document.getElementById('pImgPreview').src = uploadedImgBase64;
+                document.getElementById('pImgPreview').style.display = "block";
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        };
+
+        window.checkAdminCode = () => {
+            if (document.getElementById('adminCode').value === "2026") {
+                document.getElementById('adminLogin').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+                sessionStorage.setItem('admin_access', 'true');
+                refreshData();
+            } else document.getElementById('errorMsg').style.display = 'block';
+        };
+
+        window.logoutAdmin = () => { sessionStorage.removeItem('admin_access'); window.location.reload(); };
+
+        window.showTab = (tab) => {
+            document.getElementById('ordersTab').style.display = tab === 'orders' ? 'block' : 'none';
+            document.getElementById('productsTab').style.display = tab === 'products' ? 'block' : 'none';
+            document.getElementById('tabOrders').classList.toggle('active', tab === 'orders');
+            document.getElementById('tabProducts').classList.toggle('active', tab === 'products');
+            refreshData();
+        };
+
+        async function refreshData() {
+            try {
+                const resO = await fetch(`${API_URL}/orders`);
+                const orders = await resO.json();
+                const resP = await fetch(`${API_URL}/products`);
+                const products = await resP.json();
+                
+                document.getElementById('statOrders').innerText = orders.length;
+                document.getElementById('statProducts').innerText = products.length;
+                const total = orders.reduce((s, o) => s + parseFloat(o.total), 0);
+                document.getElementById('statSales').innerText = new Intl.NumberFormat('uz-UZ').format(total) + " so'm";
+                
+                renderOrders(orders);
+                renderAdminProducts(products);
+            } catch (e) { console.error(e); }
+        }
+
+        function renderOrders(orders) {
+            document.getElementById('adminOrdersList').innerHTML = orders.reverse().map(o => `
+                <div class="order-card">
+                    <i class="fas fa-trash delete-btn" style="position:absolute; top:20px; right:20px;" onclick="deleteOrder('${o.id}')"></i>
+                    <strong>#${o.id}</strong> [${o.status}]
+                    <p style="margin-top:10px;">${o.customer.name} (${o.customer.phone})</p>
+                    <p><b>${new Intl.NumberFormat('uz-UZ').format(o.total)} so'm</b></p>
+                </div>`).join('');
+        }
+
+        function renderAdminProducts(products) {
+            document.getElementById('adminProductsList').innerHTML = products.map(p => `
+                <div class="admin-product-card">
+                    <img src="${p.image}">
+                    <h4 style="font-size:11px; height:32px; overflow:hidden;">${p.name}</h4>
+                    <p>${new Intl.NumberFormat('uz-UZ').format(p.price)} so'm</p>
+                    <div style="display:flex; gap:5px; margin-top:10px;">
+                        <button onclick="editProduct('${p.id}')" style="flex:1; border:none; background:#eee; cursor:pointer; padding:5px; border-radius:5px;">✍️</button>
+                        <button onclick="deleteProduct('${p.id}')" style="flex:1; background:#ff4757; color:white; border:none; cursor:pointer; padding:5px; border-radius:5px;">🗑️</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        window.openProductModal = () => {
+            currentEditId = null;
+            uploadedImgBase64 = "";
+            document.getElementById('modalTitle').innerText = "Yangi mahsulot";
+            document.getElementById('pName').value = '';
+            document.getElementById('pPrice').value = '';
+            document.getElementById('pDescription').value = '';
+            document.getElementById('pImgPreview').style.display = "none";
+            document.getElementById('productModal').style.display = 'block';
+        };
+
+        window.closeProductModal = () => document.getElementById('productModal').style.display = 'none';
+
+        window.editProduct = async (id) => {
+            const res = await fetch(`${API_URL}/products`);
+            const products = await res.json();
+            const p = products.find(item => item.id.toString() === id.toString());
+            if(p) {
+                currentEditId = id;
+                uploadedImgBase64 = p.image;
+                document.getElementById('modalTitle').innerText = "Tahrirlash";
+                document.getElementById('pName').value = p.name;
+                document.getElementById('pPrice').value = p.price;
+                document.getElementById('pCategory').value = p.category;
+                document.getElementById('pDescription').value = p.description || '';
+                document.getElementById('pImgPreview').src = p.image;
+                document.getElementById('pImgPreview').style.display = "block";
+                document.getElementById('productModal').style.display = 'block';
+            }
+        };
+
+        window.saveProduct = async () => {
+            const p = {
+                id: currentEditId,
+                name: document.getElementById('pName').value,
+                price: parseFloat(document.getElementById('pPrice').value),
+                category: document.getElementById('pCategory').value,
+                description: document.getElementById('pDescription').value,
+                image: uploadedImgBase64 || "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d"
+            };
+            if(!p.name || isNaN(p.price)) return alert("Ism va narxni kiriting!");
+            
+            const response = await fetch(`${API_URL}/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(p)
+            });
+
+            if (response.ok) {
+                closeProductModal();
+                refreshData();
+                Swal.fire('Saqlandi!', '', 'success');
+            }
+        };
+
+        window.deleteProduct = async (id) => {
+            if(confirm("Mahsulotni o'chirmoqchimisiz?")) {
+                await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+                refreshData();
+            }
+        };
+
+        window.deleteOrder = async (id) => {
+            if(confirm("Buyurtmani o'chirmoqchimisiz?")) {
+                await fetch(`${API_URL}/orders/${id}`, { method: 'DELETE' });
+                refreshData();
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('admin_access') === 'true') {
+                document.getElementById('adminLogin').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+                refreshData();
+            }
+            document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krist - Buyurtma berish</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="checkout.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="checkout-page">
+    <div class="checkout-container-custom">
+        <h1 class="logo" style="text-align: center; margin-bottom: 30px; font-size: 32px;">Krist</h1>
+        <div class="checkout-grid">
+            <div class="checkout-card">
+                <h2 class="checkout-title">Yetkazib berish ma'lumotlari</h2>
+                <form id="orderForm">
+                    <div class="form-group"><label>To'liq ismingiz</label><input type="text" id="fullName" class="form-input" required></div>
+                    <h4 style="margin: 25px 0 15px; font-size: 15px;">To'lov usuli</h4>
+                    <div class="payment-grid">
+                        <div class="method-item active" id="payCash" onclick="selectPayment('cash')"><i class="fas fa-money-bill-wave"></i> <span>Naqd pul</span></div>
+                        <div class="method-item" id="payCard" onclick="selectPayment('card')"><i class="fas fa-credit-card"></i> <span>Bank kartasi</span></div>
+                    </div>
+                    <input type="hidden" id="paymentMethod" value="cash">
+                    <div id="cardDetails" class="card-details-box" style="display: none;">
+                        <input type="text" class="form-input" placeholder="Karta raqami" style="margin-bottom:10px;">
+                        <div style="display:flex; gap:10px;"><input type="text" class="form-input" placeholder="MM/YY"><input type="password" class="form-input" placeholder="CVV"></div>
+                    </div>
+                    <div class="form-group"><label>Telefon</label><input type="tel" id="phone" class="form-input" required placeholder="+998"></div>
+                    <div class="form-group"><label>Manzil</label><input type="text" id="address" class="form-input" required></div>
+                    <button type="submit" id="submitBtn" class="btn-primary-krist" style="margin-top: 20px;">Buyurtmani tasdiqlash</button>
+                </form>
+            </div>
+            <div class="checkout-card"><h3>Xulosa</h3><div class="summary-box" id="summaryBox"></div></div>
+        </div>
+    </div>
+    <script>
+        const formatSum = (n) => new Intl.NumberFormat('uz-UZ').format(n) + " so'm";
+        const user = JSON.parse(localStorage.getItem('krist_user'));
+        if (!user) window.location.href = 'register.html';
+
+        const cart = JSON.parse(localStorage.getItem('krist_cart')) || [];
+        if (cart.length === 0) window.location.href = 'index.html';
+
+        const summaryBox = document.getElementById('summaryBox');
+        let total = 0;
+        cart.forEach(item => {
+            total += parseFloat(item.price);
+            summaryBox.innerHTML += `
+                <div class="summary-item" style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px;">
+                    <span>${item.name}</span> 
+                    <span>${formatSum(item.price)}</span>
+                </div>`;
+        });
+        summaryBox.innerHTML += `
+            <div class="summary-total-row" style="margin-top:15px; border-top:1px solid #ddd; padding-top:10px; font-weight:bold; font-size:1.1rem; display:flex; justify-content:space-between;">
+                <span>Jami:</span> <span>${formatSum(total)}</span>
+            </div>`;
+
+        window.selectPayment = (method) => {
+            document.getElementById('paymentMethod').value = method;
+            document.getElementById('payCash').classList.toggle('active', method === 'cash');
+            document.getElementById('payCard').classList.toggle('active', method === 'card');
+            document.getElementById('cardDetails').style.display = method === 'card' ? 'block' : 'none';
+        };
+
+        document.getElementById('orderForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true; btn.innerText = "Yuborilmoqda...";
+
+            const orderData = {
+                customer: {
+                    name: document.getElementById('fullName').value,
+                    email: user.email,
+                    phone: document.getElementById('phone').value,
+                    address: document.getElementById('address').value
+                },
+                items: cart,
+                total: total,
+                date: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const savedOrder = result.order;
+                    const allOrders = JSON.parse(localStorage.getItem('krist_orders')) || [];
+                    allOrders.push(savedOrder);
+                    localStorage.setItem('krist_orders', JSON.stringify(allOrders));
+                    localStorage.removeItem('krist_cart');
+                    Swal.fire({ title: 'Muvaffaqiyatli!', text: 'Buyurtma berildi!', icon: 'success' }).then(() => { window.location.href = 'index.html'; });
+                }
+            } catch (err) {
+                // Fail-safe
+                const backupOrder = { ...orderData, id: Date.now().toString(), status: 'pending' };
+                const allOrders = JSON.parse(localStorage.getItem('krist_orders')) || [];
+                allOrders.push(backupOrder);
+                localStorage.setItem('krist_orders', JSON.stringify(allOrders));
+                localStorage.removeItem('krist_cart');
+                Swal.fire({ title: 'Buyurtma qabul qilindi!', text: 'Lokal rejimda saqlandi.', icon: 'info' }).then(() => { window.location.href = 'index.html'; });
+            }
+        };
+
+        if (user) document.getElementById('fullName').value = user.name;
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    </script>
+</body>
+</html>
